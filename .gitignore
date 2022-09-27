@@ -30,3 +30,20 @@
 *.exe
 *.out
 *.app
+
+Makefile
+aclocal.m4
+*.cache
+*.log
+*.status
+*.deps
+libtool
+.dirstamp
+*build*
+.vscode
+
+# Cmake output
+src/peco.h
+
+# Visual Studio
+.vs
