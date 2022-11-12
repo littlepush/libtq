@@ -64,6 +64,9 @@ public:
   */
   ~event_queue() {
     this->break_queue();
+    while (pending_threads_.size() > 0) {
+      std::this_thread::yield();
+    }
   }
 
 public:
@@ -141,7 +144,7 @@ public:
       return nullptr;
     }
     // timeout for current waiting oprand
-    if (ret == std::cv_status::timeout) {
+    if (!ret) {
       return nullptr;
     }
     auto ti = il_.front();
@@ -198,7 +201,7 @@ public:
       // Mark the item as invalidate
       auto it = il_.begin();
       for(; it != il_.end(); ++it) {
-        if (it != si) continue;
+        if (*it != si) continue;
         il_.erase(it);
         break;
       }
