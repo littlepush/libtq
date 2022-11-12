@@ -42,6 +42,8 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "")
   set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+set(LIBTQ_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+
 # Group sources into different source group according to the file path
 function(libtq_group_sources target begin_dir)
   set(SOURCE_GROUP_DELIMITER "/")
@@ -160,5 +162,8 @@ else()
 endif()
 option(LIBTQ_BUILD_TEST "Build test target, default is ON" ${_LIBTQ_BUILD_ENABLE_TEST})
 if (${LIBTQ_BUILD_TEST})
+  set(BUILD_GMOCK OFF CACHE BOOL "Disable GMock" FORCE)
+  set(INSTALL_GTEST OFF CACHE BOOL "Disable Gtest install" FORCE)
+  add_subdirectory(thirdparty/googletest)
   add_subdirectory(test)
 endif()
