@@ -151,7 +151,7 @@ endif()
 add_subdirectory(src)
 
 # Group the source
-libtq_group_sources(libtq "${CMAKE_CURRENT_SOURCE_DIR}/src")
+libtq_group_sources(tq "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if (NOT DEFINED LIBTQ_ENABLE_TEST)
   set(_LIBTQ_BUILD_ENABLE_TEST ON)

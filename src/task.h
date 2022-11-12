@@ -1,7 +1,7 @@
 /*
-    worker_group.h
+    task.h
     libtq
-    2022-11-11
+    2022-09-28
     Push Chen
 */
 
@@ -31,58 +31,35 @@ SOFTWARE.
 
 #pragma once
 
-#ifndef LIBTQ_WORKER_GROUP_H__
-#define LIBTQ_WORKER_GROUP_H__
+#ifndef LIBTQ_TASK_H__
+#define LIBTQ_TASK_H__
 
-#include <vector>
-#include "worker.h"
+#include <functional>
+#include <chrono>
 
 namespace libtq {
 
-typedef std::shared_ptr<worker> worker_st;
+struct task;
 
-class worker_group {
-public:
-  /**
-   * @brief Create a worker group with default 2 workers
-  */
-  worker_group(task_queue_wt q, unsigned int worker_count = 2);
+typedef std::function<void()>                     task_t;
+typedef std::function<void(task*)>                task_hook_t;
+typedef std::chrono::steady_clock                 task_clock_t;
+typedef std::chrono::time_point<task_clock_t>     task_time_t;
+typedef std::chrono::nanoseconds                  duration_t;
 
-  /**
-   * @brief Destroy the group
-  */
-  ~worker_group();
+struct task_location {
+  const char*   file;
+  int           line;
+};
+#define __TQ_TASK_LOC     (libtq::task_location){__FILE__, __LINE__}
 
-  /**
-   * @brief Get current worker group's worker count
-  */
-  size_t size() const;
-
-  /**
-   * @brief increase a worker
-  */
-  void increase_worker();
-
-  /**
-   * @brief remove a worker if still has
-  */
-  void decrease_worker();
-
-protected:
-  /**
-   * @brief Worker storage
-  */
-  std::vector<worker_st>    workers_;
-
-  /**
-   * @brief Related event queue for all worker
-  */
-  task_queue_wt related_eq_;
-
-  /**
-   * @brief Lock for workers
-  */
-  mutable std::mutex worker_lock_;
+struct task {
+  task_t        t;
+  task_hook_t   before;
+  task_hook_t   after;
+  task_location loc;
+  task_time_t   ptime;
+  task_time_t   btime;
 };
 
 } // namespace libtq
