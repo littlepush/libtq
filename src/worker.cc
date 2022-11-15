@@ -77,11 +77,12 @@ void worker::start() {
   std::thread t([&cv, this]() {
     std::lock_guard<std::mutex> running_guard(this->running_lock_);
     this->running_tid_ = std::this_thread::get_id();
+    this->running_status_ = true;
     cv.notify_one();
     this->entrance_point();
   });
   t.detach();
-  cv.wait(_, [](){ return false; });
+  cv.wait(_, [this]() { return this->running_status_ == true; });
 }
 
 /**

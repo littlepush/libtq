@@ -32,3 +32,39 @@ SOFTWARE.
 #include "worker.h"
 #include "gtest/gtest.h"
 
+class worker_test : public testing::Test {
+public:
+  worker_test() : eq_(new libtq::eq_t), w_(eq_) {}
+protected:
+  libtq::eq_st eq_;
+  libtq::worker w_;
+};
+
+TEST_F(worker_test, start_stop) {
+  w_.start();
+  EXPECT_TRUE(w_.is_running());
+  w_.stop();
+  EXPECT_FALSE(w_.is_running());
+}
+
+TEST_F(worker_test, async_thread) {
+  w_.start();
+  libtq::task st;
+  auto c_tid = std::this_thread::get_id();
+  int count = 0;
+  st.before = [&count](libtq::task* ptask) {
+    count += 1;
+  };
+  st.t = [c_tid, &count]() {
+    EXPECT_NE(c_tid, std::this_thread::get_id());
+    count += 1;
+  };
+  st.after = [&count](libtq::task* ptask) {
+    count += 1;
+  };
+  eq_->emplace_back(std::move(st));
+  std::this_thread::yield();
+  w_.stop();
+  EXPECT_EQ(count, 3);
+}
+
