@@ -46,7 +46,7 @@ public:
   /**
    * @brief Create a worker group with default 2 workers
   */
-  worker_group(task_queue_wt q, unsigned int worker_count = 2);
+  worker_group(eq_wt q, unsigned int worker_count = 2);
 
   /**
    * @brief Destroy the group
@@ -82,7 +82,7 @@ protected:
   /**
    * @brief Related event queue for all worker
   */
-  task_queue_wt related_eq_;
+  eq_wt related_eq_;
 
   /**
    * @brief Lock for workers

@@ -60,7 +60,7 @@ protected:
 /**
  * @brief Initialize a task queue bind to event queue and worker group
 */
-task_queue::task_queue(task_queue_wt related_eq, worker_group_wt related_wg)
+task_queue::task_queue(eq_wt related_eq, worker_group_wt related_wg)
   : valid_(true), in_dstr_(false), related_eq_(related_eq), related_wg_(related_wg)
 { }
 

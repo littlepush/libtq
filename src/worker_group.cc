@@ -36,7 +36,7 @@ namespace libtq {
 /**
  * @brief Create a worker group with default 2 workers
 */
-worker_group::worker_group(task_queue_wt q, unsigned int worker_count) : related_eq_(q) {
+worker_group::worker_group(eq_wt q, unsigned int worker_count) : related_eq_(q) {
   for (unsigned int i = 0; i < worker_count; ++i) {
     this->increase_worker();
   }

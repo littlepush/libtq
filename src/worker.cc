@@ -38,7 +38,7 @@ namespace libtq {
  * @brief Init a worker with the task queue.
  * @remarks throw runtime error when the queue is not validate
 */
-worker::worker(task_queue_wt q) :
+worker::worker(eq_wt q) :
   running_status_(false), related_eq_(q)
 {
 }

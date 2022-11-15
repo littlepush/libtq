@@ -43,9 +43,9 @@ SOFTWARE.
 
 namespace libtq {
 
-typedef event_queue<task> task_queue_t;
-typedef std::weak_ptr<task_queue_t> task_queue_wt;
-typedef std::shared_ptr<task_queue_t> task_queue_st;
+typedef event_queue<task> eq_t;
+typedef std::weak_ptr<eq_t> eq_wt;
+typedef std::shared_ptr<eq_t> eq_st;
 
 class worker {
 public:
@@ -53,7 +53,7 @@ public:
    * @brief Init a worker with the task queue.
    * @remarks throw runtime error when the queue is not validate
   */
-  worker(task_queue_wt q);
+  worker(eq_wt q);
 
   /**
    * @brief Stop and quit worker
@@ -101,7 +101,7 @@ private:
   /**
    * @brief Releated event queue
   */
-  task_queue_wt related_eq_;
+  eq_wt related_eq_;
 
   /**
    * @brief Running thread's id
