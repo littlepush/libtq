@@ -85,6 +85,11 @@ public:
   */
   void sync_task(task_location loc, task_t t);
 
+public:
+  task_queue(const task_queue&) = delete;
+  task_queue(task_queue&&) = delete;
+  task_queue& operator = (const task_queue&) = delete;
+  task_queue& operator = (task_queue&&) = delete;
 protected:
   /**
    * @brief Initialize a task queue bind to event queue and worker group

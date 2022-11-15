@@ -61,6 +61,12 @@ public:
   ~worker();
 
 public:
+  worker(const worker&) = delete;
+  worker(worker&&) = delete;
+  worker& operator = (const worker&) = delete;
+  worker& operator = (worker&&) = delete;
+
+public:
   /**
    * @brief return if current worker is running
   */

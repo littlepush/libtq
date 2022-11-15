@@ -73,6 +73,12 @@ public:
   */
   void decrease_worker();
 
+public:
+  worker_group(const worker_group&) = delete;
+  worker_group(worker_group&&) = delete;
+  worker_group& operator =(const worker_group&) = delete;
+  worker_group& operator =(worker_group&&) = delete;
+
 protected:
   /**
    * @brief Worker storage
