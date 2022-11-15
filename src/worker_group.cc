@@ -75,7 +75,7 @@ bool worker_group::in_worker_grouop() const {
  * @brief increase a worker
 */
 void worker_group::increase_worker() {
-  worker_st w = std::make_shared<worker>(this->related_eq_);
+  w_st w = std::make_shared<worker>(this->related_eq_);
   std::lock_guard<std::mutex> _(this->worker_lock_);
   this->workers_.push_back(w);
   w->start();

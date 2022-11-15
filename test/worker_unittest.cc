@@ -1,7 +1,7 @@
 /*
-    task_queue_manager.h
+    worker_unittest.cc
     libtq
-    2022-11-15
+    2022-11-12
     Push Chen
 */
 
@@ -29,38 +29,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include "worker.h"
+#include "gtest/gtest.h"
 
-#ifndef LIBTQ_TASK_QUEUE_MANAGER_H__
-#define LIBTQ_TASK_QUEUE_MANAGER_H__
-
-#include "task_queue.h"
-
-namespace libtq {
-
-class task_queue_manager {
-public: 
-  typedef std::shared_ptr<task_queue>   tq_st;
-
-public:
-  /**
-   * @brief Change default worker group's worker count to given value
-  */
-  static void adjust_default_worker_count(int wc);
-
-  /**
-   * @brief Create a task queue and bind to default worker group
-  */
-  static tq_st create_task_queue();
-
-  /**
-   * @brief Create a task queue with specified event queue and worker group
-  */
-  static tq_st create_task_queue(eq_st related_eq, wg_st related_wg);
-};
-
-} // namespace libtq
-
-#endif
-
-// Push Chen

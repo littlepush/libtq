@@ -39,7 +39,7 @@ SOFTWARE.
 
 namespace libtq {
 
-typedef std::shared_ptr<worker> worker_st;
+typedef std::shared_ptr<worker> w_st;
 
 class worker_group {
 public:
@@ -77,7 +77,7 @@ protected:
   /**
    * @brief Worker storage
   */
-  std::vector<worker_st>    workers_;
+  std::vector<w_st>    workers_;
 
   /**
    * @brief Related event queue for all worker

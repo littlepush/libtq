@@ -43,15 +43,15 @@ SOFTWARE.
 
 namespace libtq {
 
-typedef std::shared_ptr<worker_group> worker_group_st;
-typedef std::weak_ptr<worker_group>   worker_group_wt;
+typedef std::shared_ptr<worker_group> wg_st;
+typedef std::weak_ptr<worker_group>   wg_wt;
 
 class task_queue : public std::enable_shared_from_this<task_queue> {
 public:
   /**
    * @brief Initialize a task queue bind to event queue and worker group
   */
-  task_queue(eq_wt related_eq, worker_group_wt related_wg);
+  task_queue(eq_wt related_eq, wg_wt related_wg);
 
   /**
    * @brief Block until all task done
@@ -84,7 +84,7 @@ private:
   std::atomic_bool      valid_;
   std::atomic_bool      in_dstr_;
   eq_wt         related_eq_;
-  worker_group_wt       related_wg_;
+  wg_wt       related_wg_;
 };
 
 } // namespace libtq

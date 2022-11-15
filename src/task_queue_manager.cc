@@ -39,8 +39,8 @@ eq_st global_event_queue() {
   return g_eq;
 }
 
-worker_group_st global_worker_group() {
-  static worker_group_st g_wg(new worker_group(global_event_queue()));
+wg_st global_worker_group() {
+  static wg_st g_wg(new worker_group(global_event_queue()));
   return g_wg;
 }
 
@@ -67,7 +67,7 @@ task_queue_manager::tq_st task_queue_manager::create_task_queue() {
 /**
  * @brief Create a task queue with specified event queue and worker group
 */
-task_queue_manager::tq_st task_queue_manager::create_task_queue(eq_st related_eq, worker_group_st related_wg) {
+task_queue_manager::tq_st task_queue_manager::create_task_queue(eq_st related_eq, wg_st related_wg) {
   return task_queue_manager::tq_st(new task_queue(related_eq, related_wg));
 }
 
