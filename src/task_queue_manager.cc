@@ -61,14 +61,14 @@ void task_queue_manager::adjust_default_worker_count(int wc) {
  * @brief Create a task queue and bind to default worker group
 */
 task_queue_manager::tq_st task_queue_manager::create_task_queue() {
-  return task_queue_manager::tq_st(new task_queue(global_event_queue(), global_worker_group()));
+  return task_queue::create(global_event_queue(), global_worker_group());
 }
 
 /**
  * @brief Create a task queue with specified event queue and worker group
 */
 task_queue_manager::tq_st task_queue_manager::create_task_queue(eq_st related_eq, wg_st related_wg) {
-  return task_queue_manager::tq_st(new task_queue(related_eq, related_wg));
+  return task_queue::create(related_eq, related_wg);
 }
 
 } // namespace libtq

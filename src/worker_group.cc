@@ -60,7 +60,7 @@ size_t worker_group::size() const {
 /**
  * @brief Check if current thread is in the worker group
 */
-bool worker_group::in_worker_grouop() const {
+bool worker_group::in_worker_group() const {
   std::lock_guard<std::mutex> _(this->worker_lock_);
   auto c_tid = std::this_thread::get_id();
   for (auto& w : this->workers_) {

@@ -41,6 +41,14 @@ SOFTWARE.
 #include "worker_group.h"
 #include "task.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#define NOP() __nop()       // _emit 0x90
+#else
+// assume __GNUC__ inline asm
+#define NOP() asm("nop")    // implicitly volatile
+#endif
+
 namespace libtq {
 
 typedef std::shared_ptr<worker_group> wg_st;
@@ -49,10 +57,9 @@ typedef std::weak_ptr<worker_group>   wg_wt;
 class task_queue : public std::enable_shared_from_this<task_queue> {
 public:
   /**
-   * @brief Initialize a task queue bind to event queue and worker group
+   * @brief Force create task queue with shared ptr
   */
-  task_queue(eq_wt related_eq, wg_wt related_wg);
-
+  static std::shared_ptr<task_queue> create(eq_wt related_eq, wg_wt related_wg);
   /**
    * @brief Block until all task done
   */
@@ -78,14 +85,25 @@ public:
   */
   void sync_task(task_location loc, task_t t);
 
+protected:
+  /**
+   * @brief Initialize a task queue bind to event queue and worker group
+  */
+  task_queue(eq_wt related_eq, wg_wt related_wg);
+  
 private:
   std::mutex            tq_lock_;
   std::list<task>       tq_;
   std::atomic_bool      valid_;
   std::atomic_bool      in_dstr_;
+  std::atomic_bool      running_;
   eq_wt         related_eq_;
   wg_wt       related_wg_;
 };
+
+typedef task_queue  tq_t;
+typedef std::shared_ptr<tq_t>   tq_st;
+typedef std::weak_ptr<tq_t>     tq_wt;
 
 } // namespace libtq
 

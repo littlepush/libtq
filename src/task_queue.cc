@@ -31,15 +31,6 @@ SOFTWARE.
 
 #include "task_queue.h"
 
-#ifdef _MSC_VER
-#include <intrin.h>
-#define NOP() __nop()       // _emit 0x90
-#else
-// assume __GNUC__ inline asm
-#define NOP() asm("nop")    // implicitly volatile
-#endif
-
-
 namespace libtq {
 
 class movable_flag {
@@ -58,10 +49,17 @@ protected:
 };
 
 /**
+ * @brief Force create task queue with shared ptr
+*/
+std::shared_ptr<task_queue> task_queue::create(eq_wt related_eq, wg_wt related_wg) {
+  return std::shared_ptr<task_queue>(new task_queue(related_eq, related_wg));
+}
+
+/**
  * @brief Initialize a task queue bind to event queue and worker group
 */
 task_queue::task_queue(eq_wt related_eq, wg_wt related_wg)
-  : valid_(true), in_dstr_(false), related_eq_(related_eq), related_wg_(related_wg)
+  : valid_(true), in_dstr_(false), running_(false), related_eq_(related_eq), related_wg_(related_wg)
 { }
 
 /**
@@ -81,7 +79,13 @@ task_queue::~task_queue() {
 */
 void task_queue::cancel() {
   std::lock_guard<std::mutex> _(this->tq_lock_);
-  this->tq_.clear();
+  if (this->running_) {
+    while (this->tq_.size() > 1) {
+      this->tq_.pop_back();
+    }
+  } else {
+    this->tq_.clear();
+  }
 }
 
 /**
@@ -96,29 +100,32 @@ void task_queue::break_queue() {
 */
 void task_queue::post_task(task_location loc, task_t t) {
   if (!valid_ && !in_dstr_) return;
-  std::weak_ptr<task_queue> weak_self = this->shared_from_this();
   task st;
   st.t = t;
   st.loc = loc;
   st.ptime = std::chrono::steady_clock::now();
 
-  st.after = [weak_self](task* ptask) {
-    if (auto self = weak_self.lock()) {
-      std::lock_guard<std::mutex> _(self->tq_lock_);
-      self->tq_.pop_front();
-      if (self->tq_.size() > 0) {
-        if (auto seq = self->related_eq_.lock()) {
-          seq->emplace_back(std::move(self->tq_.front()));
-        }
+  st.after = [this](task* ptask) {
+    std::lock_guard<std::mutex> _(this->tq_lock_);
+    this->tq_.pop_front();
+    if (this->tq_.size() > 0) {
+      if (auto seq = this->related_eq_.lock()) {
+        // still running, no need to change
+        seq->emplace_back(std::move(this->tq_.front()));
+      } else {
+        this->running_ = false;
       }
+    } else {
+      this->running_ = false;
     }
   };
 
   std::lock_guard<std::mutex> _(this->tq_lock_);
   this->tq_.emplace_back(std::move(st));
   // the only one in the queue is current task
-  if (this->tq_.size() == 1) {
+  if (this->tq_.size() == 1 && this->running_ == false) {
     if (auto seq = this->related_eq_.lock()) {
+      this->running_ = true;
       seq->emplace_back(std::move(this->tq_.front()));
     }
   }
@@ -129,10 +136,9 @@ void task_queue::post_task(task_location loc, task_t t) {
 */
 void task_queue::sync_task(task_location loc, task_t t) {
   if (!valid_ && !in_dstr_) return;
-  std::weak_ptr<task_queue> weak_self = this->shared_from_this();
   if (auto wg = this->related_wg_.lock()) {
     // we are the only thread in current worker group
-    if (wg->size() == 1 && wg->in_worker_grouop()) {
+    if (wg->size() == 1 && wg->in_worker_group()) {
       if (t) t();
     } else {
       std::mutex mf_l;
@@ -142,7 +148,7 @@ void task_queue::sync_task(task_location loc, task_t t) {
         t();
       });
       std::unique_lock<std::mutex> _(mf_l);
-      cv->wait(_, []() { return false; });
+      cv->wait(_);
     }
   }
 }

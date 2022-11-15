@@ -61,7 +61,7 @@ public:
   /**
    * @brief Check if current thread is in the worker group
   */
-  bool in_worker_grouop() const;
+  bool in_worker_group() const;
 
   /**
    * @brief increase a worker

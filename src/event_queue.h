@@ -229,6 +229,14 @@ public:
     return pending_threads_.size();
   }
 
+  /**
+   * @brief Item count in queue
+  */
+  size_t pending_count() const {
+    eq_lg_t lg(this->l_);
+    return il_.size();
+  }
+
 protected:
   /**
    * @brief Tell all waiting thread to stop
@@ -254,7 +262,7 @@ protected:
   /**
    * @brief Mutex for the cv
   */
-  std::mutex l_;
+  mutable std::mutex l_;
 
   /**
    * @brief CV to control event
