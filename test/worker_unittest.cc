@@ -63,7 +63,9 @@ TEST_F(worker_test, async_thread) {
     count += 1;
   };
   eq_->emplace_back(std::move(st));
-  std::this_thread::yield();
+  while (eq_->pending_count() > 0) {
+    std::this_thread::yield();
+  }
   w_.stop();
   EXPECT_EQ(count, 3);
 }
