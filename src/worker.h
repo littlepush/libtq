@@ -85,7 +85,7 @@ private:
   /**
    * @brief inner thread main function
   */
-  void entrance_pointer();
+  void entrance_point();
 
 private:
   /**

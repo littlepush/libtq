@@ -59,6 +59,11 @@ public:
   size_t size() const;
 
   /**
+   * @brief Check if current thread is in the worker group
+  */
+  bool in_worker_grouop() const;
+
+  /**
    * @brief increase a worker
   */
   void increase_worker();

@@ -221,6 +221,14 @@ public:
     cv_.notify_all();
   }
 
+  /**
+   * @brief Return the waiting thread count
+  */
+  size_t waiter_count() const {
+    eq_lg_t lg(this->l_);
+    return pending_threads_.size();
+  }
+
 protected:
   /**
    * @brief Tell all waiting thread to stop

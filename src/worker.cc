@@ -78,7 +78,7 @@ void worker::start() {
     std::lock_guard<std::mutex> running_guard(this->running_lock_);
     this->running_tid_ = std::this_thread::get_id();
     cv.notify_one();
-    this->entrance_pointer();
+    this->entrance_point();
   });
   t.detach();
   cv.wait(_, [](){ return false; });
@@ -101,7 +101,7 @@ void worker::stop() {
 /**
  * @brief inner thread main function
 */
-void worker::entrance_pointer() {
+void worker::entrance_point() {
   while (running_status_) {
     auto sq = related_eq_.lock();
     if (!sq) {
