@@ -51,7 +51,18 @@ struct task_location {
   const char*   file;
   int           line;
 };
+
+#if (defined WIN32 | defined _WIN32 | defined WIN64 | defined _WIN64)
+inline struct task_location __build_location(const char* f, int l) {
+  struct task_location loc;
+  loc.file = f;
+  loc.line = l;
+  return loc;
+}
+#define __TQ_TASK_LOC     (libtq::__build_location(__FILE__, __LINE__))
+#else
 #define __TQ_TASK_LOC     (libtq::task_location){__FILE__, __LINE__}
+#endif
 
 struct task {
   task_t        t;

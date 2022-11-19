@@ -68,7 +68,9 @@ public:
   */
   void add_next_job(task_time_t t, timer_job_t job) {
     std::lock_guard<std::mutex> _(cv_l_);
-    priority_job pj = (priority_job){t, job};
+    priority_job pj;
+    pj.fire_time = t;
+    pj.job = job;
     pq_.emplace(std::move(pj));
     cv_.notify_all();
   }

@@ -27,6 +27,16 @@ file (GLOB LIBTQ_TEST_SOURCE
 enable_testing()
 
 add_executable(tqtest ${LIBTQ_TEST_SOURCE})
+
+target_compile_options(tqtest PRIVATE 
+  "$<$<CONFIG:Debug>:${LIBTQ_CXX_FLAGS_DEBUG}>"
+  "$<$<CONFIG:Release>:${LIBTQ_CXX_FLAGS_RELEASE}>"
+)
+
+if (NOT ${LIBTQ_HOST_WINDOWS})
+  set_target_properties(tqtest PROPERTIES LINK_FLAGS ${LIBTQ_LINK_FLAGS})
+endif()
+
 target_include_directories(tqtest PRIVATE ${LIBTQ_SOURCE_ROOT}/src)
 target_include_directories(tqtest PRIVATE ${LIBTQ_SOURCE_ROOT}/thirdparty/googletest/googletest/include)
 target_link_libraries(tqtest PRIVATE tq)
