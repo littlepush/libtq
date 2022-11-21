@@ -46,7 +46,7 @@ public:
   /**
    * @brief Change default worker group's worker count to given value
   */
-  static void adjust_default_worker_count(int wc);
+  static void adjust_default_worker_count(unsigned int wc);
 
   /**
    * @brief Create a task queue and bind to default worker group

@@ -47,7 +47,7 @@ wg_st global_worker_group() {
 /**
  * @brief Change default worker group's worker count to given value
 */
-void task_queue_manager::adjust_default_worker_count(int wc) {
+void task_queue_manager::adjust_default_worker_count(unsigned int wc) {
   auto wg = global_worker_group();
   while (wg->size() > wc) {
     wg->decrease_worker();
