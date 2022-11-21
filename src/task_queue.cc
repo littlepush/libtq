@@ -148,7 +148,8 @@ void task_queue::sync_task(task_location loc, task_t t) {
         t();
       });
       std::unique_lock<std::mutex> _(mf_l);
-      cv->wait(_);
+      // wait up to 3 seconds incase of dead lock
+      cv->wait_for(_, std::chrono::seconds(3));
     }
   }
 }
