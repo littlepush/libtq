@@ -33,19 +33,38 @@ SOFTWARE.
 
 namespace libtq {
 
-class movable_flag {
+class state_semaphore {
 public:
-  movable_flag() : p_cv_(new std::condition_variable) {}
-  movable_flag(const movable_flag& mf) : p_cv_(std::move(mf.p_cv_)) {}
-  movable_flag(movable_flag&& mf) : p_cv_(std::move(mf.p_cv_)) {}
-  ~movable_flag() {
-    if (p_cv_) p_cv_->notify_all();
+  void wait() {
+    std::unique_lock<std::mutex> _(l_);
+    cv_.wait(_, [this]() {
+      return this->st_;
+    });
   }
-  std::shared_ptr<std::condition_variable> cv() {
-    return p_cv_;
+  void notify() {
+    std::lock_guard<std::mutex> _(l_);
+    st_ = true;
+    cv_.notify_all();
   }
 protected:
-  mutable std::shared_ptr<std::condition_variable> p_cv_;
+  std::mutex l_;
+  std::condition_variable cv_;
+  bool st_ = false;
+};
+
+class movable_flag {
+public:
+  movable_flag() : p_ss_(new state_semaphore) {}
+  movable_flag(const movable_flag& mf) : p_ss_(std::move(mf.p_ss_)) {}
+  movable_flag(movable_flag&& mf) : p_ss_(std::move(mf.p_ss_)) {}
+  ~movable_flag() {
+    if (p_ss_) p_ss_->notify();
+  }
+  std::shared_ptr<state_semaphore> state() {
+    return p_ss_;
+  }
+protected:
+  mutable std::shared_ptr<state_semaphore> p_ss_;
 };
 
 /**
@@ -143,13 +162,11 @@ void task_queue::sync_task(task_location loc, task_t t) {
     } else {
       std::mutex mf_l;
       movable_flag mf;
-      auto cv = mf.cv();
+      auto ss = mf.state();
       this->post_task(loc, [t, mf]() {
         t();
       });
-      std::unique_lock<std::mutex> _(mf_l);
-      // wait up to 3 seconds incase of dead lock
-      cv->wait_for(_, std::chrono::seconds(3));
+      ss->wait();
     }
   }
 }
