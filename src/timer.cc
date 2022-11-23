@@ -116,27 +116,37 @@ protected:
     sig.wait();
   }
 
+  std::tuple<bool, priority_job, duration_t> get_top_fire_job() {
+    std::lock_guard<std::mutex> _(cv_l_);
+    bool has_fire_job = false;
+    priority_job pj;
+    duration_t d = std::chrono::milliseconds(1000);
+    if (pq_.size() > 0) {
+      auto n = std::chrono::steady_clock::now();
+      const auto& i = pq_.top();
+      // Already timedout
+      if (i.fire_time <= n) {
+        pj = i;
+        pq_.pop();
+        has_fire_job = true;
+      } else {
+        d = i.fire_time - n;
+      }
+    }
+    return std::make_tuple(has_fire_job, std::move(pj), d);
+  }
+
   void waiting() {
-    while (status_) {
-      duration_t d = std::chrono::milliseconds(1000);
-      if (pq_.size() > 0) {
-        auto n = std::chrono::steady_clock::now();
-        const auto& i = pq_.top();
-        // Already timedout
-        if (i.fire_time <= n) {
-          i.job(i.fire_time);
-          pq_.pop();
-          continue;
-        }
-        d = (i.fire_time - n);
+    while (status_) {  
+      auto r = get_top_fire_job();
+      if (std::get<0>(r) == true) {
+        std::get<1>(r).job(std::get<1>(r).fire_time);
+      } else {
+        std::unique_lock<std::mutex> _(cv_l_);
+        // if the wait_for broken before timeout, next loop will 
+        // continue to wait until timeout, so do not need pred here.
+        cv_.wait_for(_, std::get<2>(r));
       }
-      if (!status_) {
-        continue;
-      }
-      std::unique_lock<std::mutex> _(cv_l_);
-      // if the wait_for broken before timeout, next loop will 
-      // continue to wait until timeout, so do not need pred here.
-      cv_.wait_for(_, d);
     }
   }
 protected:
