@@ -78,9 +78,12 @@ std::shared_ptr<task_queue> task_queue::create(eq_wt related_eq, wg_wt related_w
  * @brief Initialize a task queue bind to event queue and worker group
 */
 task_queue::task_queue(eq_wt related_eq, wg_wt related_wg)
-  : running_(false), related_eq_(related_eq), related_wg_(related_wg)
+  : impl_(new task_queue_impl)
 { 
-  valid_ = std::shared_ptr<std::atomic_bool>(new std::atomic_bool(true));
+  impl_->running = false;
+  impl_->valid = true;
+  impl_->related_eq = related_eq;
+  impl_->related_wg = related_wg;
 }
 
 /**
@@ -94,13 +97,13 @@ task_queue::~task_queue() {
  * @brief Cancel all task
 */
 void task_queue::cancel() {
-  std::lock_guard<std::mutex> _(this->tq_lock_);
-  if (this->running_) {
-    while (this->tq_.size() > 1) {
-      this->tq_.pop_back();
+  std::lock_guard<std::mutex> _(impl_->lock);
+  if (impl_->running) {
+    while (impl_->tq.size() > 1) {
+      impl_->tq.pop_back();
     }
   } else {
-    this->tq_.clear();
+    impl_->tq.clear();
   }
 }
 
@@ -108,47 +111,47 @@ void task_queue::cancel() {
  * @brief Break the queue, no more tasks are accepted
 */
 void task_queue::break_queue() {
-  *valid_ = false;
+  impl_->valid = false;
 }
 
 /**
  * @brief Post a async task
 */
 void task_queue::post_task(task_location loc, task_t t) {
-  if (!(*valid_)) return;
+  if (!impl_->valid) return;
   task st;
   st.t = t;
   st.loc = loc;
   st.ptime = std::chrono::steady_clock::now();
 
-  std::weak_ptr<std::atomic_bool> w_vaild = valid_;
-  st.after = [this, w_vaild](task* ptask) {
-    auto s_valid = w_vaild.lock();
-    if (!s_valid || *s_valid == false) {
+  std::weak_ptr<task_queue_impl> w_tq_impl = this->impl_;
+  st.after = [w_tq_impl](task* ptask) {
+    auto impl = w_tq_impl.lock();
+    if (!impl || impl->valid == false) {
       // already destroy or break the task_queue
       return;
     }
-    std::lock_guard<std::mutex> _(this->tq_lock_);
-    this->tq_.pop_front();
-    if (this->tq_.size() > 0) {
-      if (auto seq = this->related_eq_.lock()) {
+    std::lock_guard<std::mutex> _(impl->lock);
+    impl->tq.pop_front();
+    if (impl->tq.size() > 0) {
+      if (auto seq = impl->related_eq.lock()) {
         // still running, no need to change
-        seq->emplace_back(std::move(this->tq_.front()));
+        seq->emplace_back(std::move(impl->tq.front()));
       } else {
-        this->running_ = false;
+        impl->running = false;
       }
     } else {
-      this->running_ = false;
+      impl->running = false;
     }
   };
 
-  std::lock_guard<std::mutex> _(this->tq_lock_);
-  this->tq_.emplace_back(std::move(st));
+  std::lock_guard<std::mutex> _(impl_->lock);
+  impl_->tq.emplace_back(std::move(st));
   // the only one in the queue is current task
-  if (this->tq_.size() == 1 && this->running_ == false) {
-    if (auto seq = this->related_eq_.lock()) {
-      this->running_ = true;
-      seq->emplace_back(std::move(this->tq_.front()));
+  if (impl_->tq.size() == 1 && impl_->running == false) {
+    if (auto seq = impl_->related_eq.lock()) {
+      impl_->running = true;
+      seq->emplace_back(std::move(impl_->tq.front()));
     }
   }
 }
@@ -157,8 +160,8 @@ void task_queue::post_task(task_location loc, task_t t) {
  * @brief Wait for current task to be done
 */
 void task_queue::sync_task(task_location loc, task_t t) {
-  if (!(*valid_)) return;
-  if (auto wg = this->related_wg_.lock()) {
+  if (!impl_->valid) return;
+  if (auto wg = impl_->related_wg.lock()) {
     // we are the only thread in current worker group
     if (wg->size() == 1 && wg->in_worker_group()) {
       if (t) t();

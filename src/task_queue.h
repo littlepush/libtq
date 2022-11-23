@@ -54,6 +54,18 @@ namespace libtq {
 typedef std::shared_ptr<worker_group> wg_st;
 typedef std::weak_ptr<worker_group>   wg_wt;
 
+/**
+ * @brief Inner data storage of a task queue
+*/
+struct task_queue_impl {
+  std::mutex        lock;
+  std::list<task>   tq;
+  std::atomic_bool  valid;
+  std::atomic_bool  running;
+  eq_wt             related_eq;
+  wg_wt             related_wg;
+};
+
 class task_queue : public std::enable_shared_from_this<task_queue> {
 public:
   /**
@@ -97,12 +109,7 @@ protected:
   task_queue(eq_wt related_eq, wg_wt related_wg);
   
 private:
-  std::mutex                        tq_lock_;
-  std::list<task>                   tq_;
-  std::shared_ptr<std::atomic_bool> valid_;
-  std::atomic_bool                  running_;
-  eq_wt                             related_eq_;
-  wg_wt                             related_wg_;
+  std::shared_ptr<task_queue_impl>  impl_;
 };
 
 typedef task_queue  tq_t;
