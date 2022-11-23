@@ -97,13 +97,12 @@ protected:
   task_queue(eq_wt related_eq, wg_wt related_wg);
   
 private:
-  std::mutex            tq_lock_;
-  std::list<task>       tq_;
-  std::atomic_bool      valid_;
-  std::atomic_bool      in_dstr_;
-  std::atomic_bool      running_;
-  eq_wt         related_eq_;
-  wg_wt       related_wg_;
+  std::mutex                        tq_lock_;
+  std::list<task>                   tq_;
+  std::shared_ptr<std::atomic_bool> valid_;
+  std::atomic_bool                  running_;
+  eq_wt                             related_eq_;
+  wg_wt                             related_wg_;
 };
 
 typedef task_queue  tq_t;

@@ -78,26 +78,16 @@ std::shared_ptr<task_queue> task_queue::create(eq_wt related_eq, wg_wt related_w
  * @brief Initialize a task queue bind to event queue and worker group
 */
 task_queue::task_queue(eq_wt related_eq, wg_wt related_wg)
-  : valid_(true), in_dstr_(false), running_(false), related_eq_(related_eq), related_wg_(related_wg)
-{ }
+  : running_(false), related_eq_(related_eq), related_wg_(related_wg)
+{ 
+  valid_ = std::shared_ptr<std::atomic_bool>(new std::atomic_bool(true));
+}
 
 /**
  * @brief Block until all task done
 */
 task_queue::~task_queue() {
   this->break_queue();
-  this->in_dstr_ = true;
-
-  do {
-    std::lock_guard<std::mutex> _(this->tq_lock_);
-    if (this->tq_.size() == 0) {
-      return;
-    }
-  } while(false);
-  this->sync_task(__TQ_TASK_LOC, []() {
-    // do nothing
-    NOP();
-  });
 }
 
 /**
@@ -118,20 +108,26 @@ void task_queue::cancel() {
  * @brief Break the queue, no more tasks are accepted
 */
 void task_queue::break_queue() {
-  valid_ = false;
+  *valid_ = false;
 }
 
 /**
  * @brief Post a async task
 */
 void task_queue::post_task(task_location loc, task_t t) {
-  if (!valid_ && !in_dstr_) return;
+  if (!(*valid_)) return;
   task st;
   st.t = t;
   st.loc = loc;
   st.ptime = std::chrono::steady_clock::now();
 
-  st.after = [this](task* ptask) {
+  std::weak_ptr<std::atomic_bool> w_vaild = valid_;
+  st.after = [this, w_vaild](task* ptask) {
+    auto s_valid = w_vaild.lock();
+    if (!s_valid || *s_valid == false) {
+      // already destroy or break the task_queue
+      return;
+    }
     std::lock_guard<std::mutex> _(this->tq_lock_);
     this->tq_.pop_front();
     if (this->tq_.size() > 0) {
@@ -161,7 +157,7 @@ void task_queue::post_task(task_location loc, task_t t) {
  * @brief Wait for current task to be done
 */
 void task_queue::sync_task(task_location loc, task_t t) {
-  if (!valid_ && !in_dstr_) return;
+  if (!(*valid_)) return;
   if (auto wg = this->related_wg_.lock()) {
     // we are the only thread in current worker group
     if (wg->size() == 1 && wg->in_worker_group()) {

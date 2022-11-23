@@ -110,7 +110,7 @@ TEST_F(task_queue_test, break_queue) {
   std::vector<int> result;
   std::mutex rlock;
   for (int i = 0; i < 5; ++i) {
-    tq_->post_task(__TQ_TASK_LOC, [&result, &rlock, i]() {
+    tq_->sync_task(__TQ_TASK_LOC, [&result, &rlock, i]() {
       std::lock_guard<std::mutex> _(rlock);
       result.push_back(i);
     });
