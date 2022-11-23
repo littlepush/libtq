@@ -87,6 +87,13 @@ task_queue::task_queue(eq_wt related_eq, wg_wt related_wg)
 task_queue::~task_queue() {
   this->break_queue();
   this->in_dstr_ = true;
+
+  do {
+    std::lock_guard<std::mutex> _(this->tq_lock_);
+    if (this->tq_.size() == 0) {
+      return;
+    }
+  } while(false);
   this->sync_task(__TQ_TASK_LOC, []() {
     // do nothing
     NOP();
