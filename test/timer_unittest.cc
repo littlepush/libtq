@@ -44,7 +44,7 @@ protected:
 TEST_F(timer_test, loop_rate) {
   libtq::timer t(tq_);
   libtq::event_queue<int> eq;
-  t.start([&eq]() {
+  t.start(__TQ_TASK_LOC, [&eq]() {
     eq.emplace_back(1);
   }, 10);
   int count = 0;
@@ -66,7 +66,7 @@ TEST_F(timer_test, loop_rate) {
 TEST_F(timer_test, fire_now) {
   libtq::timer t(tq_);
   libtq::event_queue<int> eq;
-  t.start([&eq]() {
+  t.start(__TQ_TASK_LOC, [&eq]() {
     eq.emplace_back(1);
   }, 10, true);
   int count = 0;

@@ -51,7 +51,7 @@ public:
   /**
    * @brief Start the timer
   */
-  void start(task_t job, unsigned int ms, bool fire_now = false);
+  void start(task_location loc, task_t job, unsigned int ms, bool fire_now = false);
 
   /**
    * @brief Stop the timer

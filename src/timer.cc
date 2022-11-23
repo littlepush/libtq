@@ -42,6 +42,7 @@ typedef std::function<void(task_time_t)> timer_job_t;
 struct priority_job {
   task_time_t   fire_time;
   timer_job_t   job;
+  task_location loc;
 
   bool operator > (const priority_job& rh) const {
     return fire_time > rh.fire_time;
@@ -66,16 +67,20 @@ public:
   /**
    * @brief Add a job to the timer poll, will re-order the pending list
   */
-  void add_next_job(task_time_t t, timer_job_t job) {
+  void add_next_job(task_time_t t, task_location loc, timer_job_t job) {
     std::lock_guard<std::mutex> _(cv_l_);
     priority_job pj;
     pj.fire_time = t;
     pj.job = job;
+    pj.loc = loc;
     pq_.emplace(std::move(pj));
     cv_.notify_all();
   }
 
-  void fire_job_wrapper(task_time_t ft, unsigned int interval, tq_wt related_tq, std::shared_ptr<bool> st, task_t job) {
+  void fire_job_wrapper(task_location loc, 
+    task_time_t ft, unsigned int interval, 
+    tq_wt related_tq, std::shared_ptr<bool> st, task_t job
+  ) {
     if (!st || *st == false) {
       // stop the timer
       return;
@@ -90,8 +95,8 @@ public:
     while (next_ft <= now) {
       next_ft += std::chrono::milliseconds(interval);
     }
-    this->add_next_job(next_ft, [=](task_time_t last_ft) {
-      timer_inner_worker::instance().fire_job_wrapper(last_ft, interval, related_tq, st, job);
+    this->add_next_job(next_ft, loc, [=](task_time_t last_ft) {
+      timer_inner_worker::instance().fire_job_wrapper(loc, last_ft, interval, related_tq, st, job);
     });
   }
 protected:
@@ -159,19 +164,19 @@ timer::~timer() {
 /**
  * @brief Start the timer
 */
-void timer::start(task_t job, unsigned int ms, bool fire_now) {
+void timer::start(task_location loc, task_t job, unsigned int ms, bool fire_now) {
   if (!job || ms == 0) return;
   *status_ = true;
   auto now = std::chrono::steady_clock::now();
   auto next_ft = now + std::chrono::milliseconds(ms);
   auto rtq = this->related_tq_;
   auto st = this->status_;
-  timer_inner_worker::instance().add_next_job(next_ft, [=](task_time_t last_ft) {
-    timer_inner_worker::instance().fire_job_wrapper(next_ft, ms, rtq, st, job);
+  timer_inner_worker::instance().add_next_job(next_ft, loc, [=](task_time_t last_ft) {
+    timer_inner_worker::instance().fire_job_wrapper(loc, next_ft, ms, rtq, st, job);
   });
   if (fire_now) {
     if (auto tq = this->related_tq_.lock()) {
-      tq->post_task(__TQ_TASK_LOC, job);
+      tq->post_task(loc, job);
     }
   }
 }
