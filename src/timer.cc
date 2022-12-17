@@ -59,7 +59,7 @@ public:
    * @brief Force to stop the loop
   */
   ~timer_inner_worker() {
-    std::lock_guard<std::mutex> _(cv_l_);
+    // std::lock_guard<std::mutex> _(cv_l_);
     status_ = false;
     cv_.notify_all();
   }
