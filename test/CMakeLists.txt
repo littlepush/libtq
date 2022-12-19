@@ -37,6 +37,22 @@ if (NOT ${LIBTQ_HOST_WINDOWS})
   set_target_properties(tqtest PROPERTIES LINK_FLAGS ${LIBTQ_LINK_FLAGS})
 endif()
 
+set(_tqtest_dir_output_ ${CMAKE_BINARY_DIR}/Output)
+set(_tqtest_dir_debug_ ${CMAKE_BINARY_DIR}/Debug)
+set(_tqtest_dir_release_ ${CMAKE_BINARY_DIR}/Release)
+
+set_target_properties(tqtest PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${_tqtest_dir_output_})
+set_target_properties(tqtest PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${_tqtest_dir_release_})
+set_target_properties(tqtest PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG ${_tqtest_dir_debug_})
+
+set_target_properties(tqtest PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${_tqtest_dir_output_})
+set_target_properties(tqtest PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE ${_tqtest_dir_release_})
+set_target_properties(tqtest PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG ${_tqtest_dir_debug_})
+
+set_target_properties(tqtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${_tqtest_dir_output_})
+set_target_properties(tqtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${_tqtest_dir_release_})
+set_target_properties(tqtest PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${_tqtest_dir_debug_})
+
 target_include_directories(tqtest PRIVATE ${LIBTQ_SOURCE_ROOT}/src)
 target_include_directories(tqtest PRIVATE ${LIBTQ_SOURCE_ROOT}/thirdparty/googletest/googletest/include)
 target_link_libraries(tqtest PRIVATE tq)

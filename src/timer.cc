@@ -31,6 +31,10 @@ SOFTWARE.
 
 #include <queue>
 #include <iostream>
+#ifdef _WIN32
+#include <Windows.h>
+#pragma comment(lib, "Winmm.lib")
+#endif
 #include "timer.h"
 #include "task.h"
 #include "event_queue.h"
@@ -145,7 +149,13 @@ protected:
         std::unique_lock<std::mutex> _(cv_l_);
         // if the wait_for broken before timeout, next loop will 
         // continue to wait until timeout, so do not need pred here.
+#ifdef _WIN32
+        timeBeginPeriod(1);
+#endif
         cv_.wait_for(_, std::get<2>(r));
+#ifdef _WIN32
+        timeEndPeriod(1);
+#endif
       }
     }
   }

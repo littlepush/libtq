@@ -106,5 +106,9 @@ TEST_F(worker_group_test, in_worker_group) {
   while (eq_->pending_count() > 0) {
     std::this_thread::yield();
   }
+  // Yield again to make sure the job will be invoked before we check
+  for (int i = 0; i < 10; ++i) {
+    std::this_thread::yield();
+  }
   EXPECT_EQ(1, count);
 }
