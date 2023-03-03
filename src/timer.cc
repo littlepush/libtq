@@ -91,7 +91,7 @@ public:
     }
     if (job) {
       if (auto tq = related_tq.lock()) {
-        tq->post_task(__TQ_TASK_LOC, job);
+        tq->post_task(loc, job);
       }
     }
     auto now = std::chrono::steady_clock::now();
@@ -199,6 +199,21 @@ void timer::start(task_location loc, task_t job, unsigned int ms, bool fire_now)
       tq->post_task(loc, job);
     }
   }
+}
+
+/**
+ * @brief Start a job after some time
+*/
+void timer::start_once_after(task_location loc, task_t job, unsigned int ms) {
+  if (!job || ms == 0) return;
+  auto now = std::chrono::steady_clock::now();
+  auto next_ft = now + std::chrono::milliseconds(ms);
+  auto rtq = this->related_tq_;
+  timer_inner_worker::instance().add_next_job(next_ft, loc, [=](task_time_t last_ft) {
+    if (auto tq = rtq.lock()) {
+      tq->post_task(loc, job);
+    }
+  });
 }
 
 /**

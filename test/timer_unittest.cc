@@ -84,3 +84,20 @@ TEST_F(timer_test, fire_now) {
   EXPECT_GE(d, 10 * 9);
   EXPECT_LT(d, 10 * 10);
 }
+
+TEST_F(timer_test, fire_once_delay) {
+  libtq::timer t(tq_);
+  libtq::event_queue<int> eq;
+  t.start_once_after(__TQ_TASK_LOC, [&eq]() {
+    eq.emplace_back(1);
+  }, 10);
+  int count = 0;
+  while (eq.wait_for(std::chrono::milliseconds(20))) {
+    ++count;
+    if (count > 1) {
+      t.stop();
+      break;
+    }
+  }
+  EXPECT_EQ(count, 1);
+}

@@ -54,6 +54,11 @@ public:
   void start(task_location loc, task_t job, unsigned int ms, bool fire_now = false);
 
   /**
+   * @brief Start a job after some time
+  */
+  void start_once_after(task_location loc, task_t job, unsigned int ms);
+
+  /**
    * @brief Stop the timer
   */
   void stop();
