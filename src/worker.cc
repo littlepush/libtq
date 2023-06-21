@@ -72,17 +72,24 @@ void worker::start() {
     return;
   }
   std::mutex l;
-  std::unique_lock<std::mutex> _(l);
-  std::condition_variable cv;
-  std::thread t([&cv, this]() {
+  std::shared_ptr<std::condition_variable> ptr_cv = std::make_shared<std::condition_variable>();
+  std::thread t([ptr_cv, this]() {
     std::lock_guard<std::mutex> running_guard(this->running_lock_);
     this->running_tid_ = std::this_thread::get_id();
     this->running_status_ = true;
-    cv.notify_one();
+    ptr_cv->notify_one();
     this->entrance_point();
   });
   t.detach();
-  cv.wait(_, [this]() { return this->running_status_ == true; });
+  while (true) {
+    std::unique_lock<std::mutex> _(l);
+    auto r = ptr_cv->wait_for(_, std::chrono::milliseconds(10), [this]() {
+      return this->running_status_ == true;
+    });
+    if (r) {
+      break;
+    }
+  }
 }
 
 /**
@@ -109,7 +116,7 @@ void worker::entrance_point() {
       running_status_ = false;
       break;
     }
-    auto st = sq->wait();
+    auto st = sq->wait_for(std::chrono::milliseconds(10));
     if (!st) {
       continue;
     }
