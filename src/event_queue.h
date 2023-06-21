@@ -85,23 +85,29 @@ public:
    * @brief Block and wait for item, unless break the queue
    * @return shared ptr of the item, or nullptr
   */
-  item_strong_t wait() {
+  item_strong_t wait(std::function<bool ()> pred = nullptr) {
     eq_ul_t ul(this->l_);
     auto tid = std::this_thread::get_id();
     pending_threads_[tid] = true;
-    cv_.wait(ul, [this, tid]() {
+    while (!cv_.wait_for(ul, std::chrono::milliseconds(10), [this, tid, pred]() {
       auto ts = this->pending_threads_[tid];
       return (
         (ts && this->il_.size() > 0) ||  // current thread is alive and has pending item, means get signal
         (ts == false) ||  // current thread is broken, need stop waiting
-        (this->st_ == false) // current queue has been broken, need stop waiting
+        (this->st_ == false) || // current queue has been broken, need stop waiting
+        (pred && pred())
       );
-    });
+    }));
+    // cv_.wait(ul, [this, tid, pred]() {
+    // });
     auto ts = pending_threads_[tid];
     pending_threads_.erase(tid);
 
     // Queue or thread has been broken, return nothing
     if (this->st_ == false || ts == false) {
+      return nullptr;
+    }
+    if (pred && pred()) {
       return nullptr;
     }
     // Will happen in a very low chance, when invoke
@@ -118,17 +124,18 @@ public:
    * @brief Block and wait for item till timeout or queue has been broken
    * @return shared ptr of the item or nullptr
   */
-  item_strong_t wait_for(std::chrono::nanoseconds timeout) {
+  item_strong_t wait_for(std::chrono::nanoseconds timeout, std::function<bool ()> pred = nullptr) {
     eq_ul_t ul(this->l_);
     auto tid = std::this_thread::get_id();
     pending_threads_[tid] = true;
-    auto ret = cv_.wait_for(ul, timeout, [this, tid]() {
+    auto ret = cv_.wait_for(ul, timeout, [this, tid, pred]() {
       // same as wait
       auto ts = this->pending_threads_[tid];
       return (
         (ts && this->il_.size() > 0) ||
         (ts == false) ||
-        (this->st_ == false)
+        (this->st_ == false) || 
+        (pred && pred())
       );
     });
     auto ts = pending_threads_[tid];
@@ -136,6 +143,9 @@ public:
 
     // Queue or thread has been broken, return nothing
     if (this->st_ == false || ts == false) {
+      return nullptr;
+    }
+    if (pred && pred()) {
       return nullptr;
     }
     // Will happen in a very low chance, when invoke

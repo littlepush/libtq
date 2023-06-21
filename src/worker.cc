@@ -90,6 +90,9 @@ void worker::start() {
       break;
     }
   }
+  for (int i = 0; i < 5; ++i) {
+    std::this_thread::yield();
+  }
 }
 
 /**
@@ -116,7 +119,7 @@ void worker::entrance_point() {
       running_status_ = false;
       break;
     }
-    auto st = sq->wait_for(std::chrono::milliseconds(10));
+    auto st = sq->wait([this]() { return !this->running_status_; });
     if (!st) {
       continue;
     }
