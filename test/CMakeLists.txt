@@ -36,6 +36,7 @@ target_compile_options(tqtest PRIVATE
 if (NOT ${LIBTQ_HOST_WINDOWS})
   set_target_properties(tqtest PROPERTIES LINK_FLAGS ${LIBTQ_LINK_FLAGS})
 endif()
+target_link_options(tqtest PRIVATE "/DEBUG")
 
 set(_tqtest_dir_output_ ${CMAKE_BINARY_DIR}/Output)
 set(_tqtest_dir_debug_ ${CMAKE_BINARY_DIR}/Debug)

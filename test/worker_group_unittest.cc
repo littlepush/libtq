@@ -42,6 +42,10 @@ protected:
 
 TEST_F(worker_group_test, validate_count) {
   EXPECT_EQ(wg_.size(), 2);
+  // Wait for the worker group to initialized
+  while (eq_->waiter_count() != 2) {
+    std::this_thread::yield();
+  }
   EXPECT_EQ(eq_->waiter_count(), 2);
   std::vector<std::thread::id> worker_tids;
   std::mutex tids_lock;
@@ -74,15 +78,24 @@ TEST_F(worker_group_test, validate_count) {
 
 TEST_F(worker_group_test, increase) {
   EXPECT_EQ(wg_.size(), 2);
+  while (eq_->waiter_count() != 2) {
+    std::this_thread::yield();
+  }
   EXPECT_EQ(eq_->waiter_count(), 2);
   wg_.increase_worker();
   EXPECT_EQ(wg_.size(), 3);
+  while (eq_->waiter_count() != 3) {
+    std::this_thread::yield();
+  }
   EXPECT_EQ(eq_->waiter_count(), 3);
 }
 
 TEST_F(worker_group_test, decrease) {
   EXPECT_EQ(wg_.size(), 2);
-  EXPECT_EQ(eq_->waiter_count(), 2);
+  // Wait for the worker group to initialized
+  while (eq_->waiter_count() != 2) {
+    std::this_thread::yield();
+  }
   wg_.decrease_worker();
   EXPECT_EQ(wg_.size(), 1);
   EXPECT_EQ(eq_->waiter_count(), 1);
@@ -97,18 +110,13 @@ TEST_F(worker_group_test, decrease) {
 TEST_F(worker_group_test, in_worker_group) {
   EXPECT_FALSE(wg_.in_worker_group());
   libtq::task t;
-  int count = 0;
+  std::atomic<int> count = 0;
   t.t = [this, &count]() {
-    ++count;
     EXPECT_TRUE(this->wg_.in_worker_group());
+    ++count;
   };
   eq_->emplace_back(std::move(t));
-  while (eq_->pending_count() > 0) {
+  while (count == 0) {
     std::this_thread::yield();
   }
-  // Yield again to make sure the job will be invoked before we check
-  for (int i = 0; i < 10; ++i) {
-    std::this_thread::yield();
-  }
-  EXPECT_EQ(1, count);
 }

@@ -70,7 +70,7 @@ TEST_F(task_queue_test, test_sync_task) {
         std::lock_guard<std::mutex> _(rlock);
         result.push_back(i);
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     });
   }
   tq_->sync_task(__TQ_TASK_LOC, [&result, &rlock]() {
@@ -92,7 +92,7 @@ TEST_F(task_queue_test, cancel_task) {
         std::lock_guard<std::mutex> _(rlock);
         result.push_back(i);
       }
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
     });
   }
   std::this_thread::yield();
@@ -118,6 +118,6 @@ TEST_F(task_queue_test, break_queue) {
       tq_->break_queue();
     }
   }
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(50));
   EXPECT_EQ(result.size(), 3);
 }

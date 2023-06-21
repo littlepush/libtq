@@ -32,6 +32,7 @@ set(LIBTQ_INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}" CACHE STRING "")
 
 # Create the library
 add_library(tq ${LIBTQ_LIB_TYPE} ${LIBTQ_SOURCES})
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/../ FILES ${LIBTQ_SOURCES})
 target_compile_definitions(tq PRIVATE "TQ_IS_BUILDING=1")
 set_target_properties(tq PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET tq PROPERTY CXX_STANDARD 14)
@@ -44,6 +45,7 @@ target_compile_options(tq PRIVATE
 if (NOT ${LIBTQ_HOST_WINDOWS})
   set_target_properties(tq PROPERTIES LINK_FLAGS ${LIBTQ_LINK_FLAGS})
 endif()
+target_link_options(tq PRIVATE "/DEBUG")
 
 set(_tq_dir_output_ ${CMAKE_BINARY_DIR}/Output)
 set(_tq_dir_debug_ ${CMAKE_BINARY_DIR}/Debug)
