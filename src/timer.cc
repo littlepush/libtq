@@ -66,6 +66,9 @@ public:
     // std::lock_guard<std::mutex> _(cv_l_);
     status_ = false;
     cv_.notify_all();
+    if (wt_->joinable()) {
+      wt_->join();
+    }
   }
 
   /**
@@ -110,12 +113,11 @@ protected:
   */
   timer_inner_worker() : status_(false) {
     event_queue<int> sig;
-    std::thread t([this, &sig]() {
+    wt_ = std::make_shared<std::thread>([this, &sig]() {
       this->status_ = true;
       sig.emplace_back(1);
       this->waiting();
     });
-    t.detach();
 
     sig.wait();
   }
@@ -165,6 +167,7 @@ protected:
   */
   std::condition_variable cv_;
   std::mutex cv_l_;
+  std::shared_ptr<std::thread> wt_;
 
   /**
    * @brief status
