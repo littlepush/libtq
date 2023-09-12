@@ -166,7 +166,6 @@ void task_queue::sync_task(task_location loc, task_t t) {
     if (wg->size() == 1 && wg->in_worker_group()) {
       if (t) t();
     } else {
-      std::mutex mf_l;
       movable_flag mf;
       auto ss = mf.state();
       this->post_task(loc, [t, mf]() {
