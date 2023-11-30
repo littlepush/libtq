@@ -64,6 +64,8 @@ inline struct task_location __build_location(const char* f, int l) {
 #define __TQ_TASK_LOC     (libtq::task_location){__FILE__, __LINE__}
 #endif
 
+#define TQ_TASK_LOC       __TQ_TASK_LOC
+
 struct task {
   task_t        t;
   task_hook_t   before;
