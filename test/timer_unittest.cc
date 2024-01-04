@@ -102,3 +102,17 @@ TEST_F(timer_test, fire_once_delay) {
   }
   EXPECT_EQ(count, 1);
 }
+
+TEST_F(timer_test, fire_once_cancel) {
+  libtq::timer t(tq_);
+  libtq::event_queue<int> eq;
+  bool pred_value = true;
+  t.start_once_after(__TQ_TASK_LOC, [&]() {
+    eq.emplace_back(1);
+  }, 10, [&]() {
+    pred_value = false;
+    return false;
+  });
+  EXPECT_FALSE(eq.wait_for(std::chrono::milliseconds(20)));
+  EXPECT_FALSE(pred_value);
+}

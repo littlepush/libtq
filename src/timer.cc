@@ -207,14 +207,22 @@ void timer::start(task_location loc, task_t job, unsigned int ms, bool fire_now)
 /**
  * @brief Start a job after some time
 */
-void timer::start_once_after(task_location loc, task_t job, unsigned int ms) {
+void timer::start_once_after(task_location loc, task_t job, unsigned int ms, 
+  std::function<bool()> pred
+) {
   if (!job || ms == 0) return;
   auto now = std::chrono::steady_clock::now();
   auto next_ft = now + std::chrono::milliseconds(ms);
   auto rtq = this->related_tq_;
   timer_inner_worker::instance().add_next_job(next_ft, loc, [=](task_time_t last_ft) {
+    auto wrapper_job = [=]() {
+      if (pred) {
+        if (!pred()) return;
+      }
+      job();
+    };
     if (auto tq = rtq.lock()) {
-      tq->post_task(loc, job);
+      tq->post_task(loc, wrapper_job);
     }
   });
 }

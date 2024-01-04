@@ -110,7 +110,7 @@ TEST_F(worker_group_test, decrease) {
 TEST_F(worker_group_test, in_worker_group) {
   EXPECT_FALSE(wg_.in_worker_group());
   libtq::task t;
-  std::atomic<int> count = 0;
+  std::atomic<int> count(0);
   t.t = [this, &count]() {
     EXPECT_TRUE(this->wg_.in_worker_group());
     ++count;

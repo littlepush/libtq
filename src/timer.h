@@ -56,7 +56,8 @@ public:
   /**
    * @brief Start a job after some time
   */
-  void start_once_after(task_location loc, task_t job, unsigned int ms);
+  void start_once_after(task_location loc, task_t job, unsigned int ms, 
+    std::function<bool()> pred = nullptr);
 
   /**
    * @brief Stop the timer
