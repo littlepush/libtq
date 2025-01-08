@@ -30,9 +30,15 @@ SOFTWARE.
 */
 
 #include "gtest/gtest.h"
-#include "event_queue.h"
+#include "task_event_queue.h"
+#include "task.h"
 
 class event_queue_test : public testing::Test {
+public:
+  event_queue_test() = default;
+protected:
+  LIBTQ_DISABLE_COPY(event_queue_test)
+  LIBTQ_DISABLE_MOVE(event_queue_test)
 protected:
   libtq::event_queue<std::string> test_eq_;
 };

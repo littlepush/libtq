@@ -29,7 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "worker.h"
+#include "task_worker.h"
 #include <chrono>
 
 namespace libtq {
@@ -38,8 +38,9 @@ namespace libtq {
  * @brief Init a worker with the task queue.
  * @remarks throw runtime error when the queue is not validate
 */
-worker::worker(eq_wt q) :
-  running_status_(false), related_eq_(q)
+worker::worker(eq_wt q, thread_attribute attr) : 
+  thread(attr),
+  related_eq_(q)
 {
 }
 
@@ -50,45 +51,44 @@ worker::~worker() {
   this->stop();
 }
 
-/**
- * @brief return if current worker is running
-*/
-bool worker::is_running() const {
-  return this->running_status_;
-}
+void worker::main() {
+  std::lock_guard<std::mutex> running_guard(this->running_lock_);
+  // start signal
+  this->started_();
 
-/**
- * @brief Get current worker's thread id
-*/
-std::thread::id worker::id() const {
-  return this->running_tid_;
-}
-
-/**
- * @brief Start current worker
-*/
-void worker::start() {
-  if (this->is_running()) {
-    return;
-  }
-  std::mutex l;
-  std::shared_ptr<std::condition_variable> ptr_cv = std::make_shared<std::condition_variable>();
-  std::thread t([ptr_cv, this]() {
-    std::lock_guard<std::mutex> running_guard(this->running_lock_);
-    this->running_tid_ = std::this_thread::get_id();
-    this->running_status_ = true;
-    ptr_cv->notify_one();
-    this->entrance_point();
-  });
-  t.detach();
-  while (true) {
-    std::unique_lock<std::mutex> _(l);
-    auto r = ptr_cv->wait_for(_, std::chrono::milliseconds(10), [this]() {
-      return this->running_status_ == true;
-    });
-    if (r) {
+  while (this->is_validate()) {
+    auto sq = related_eq_.lock();
+    if (!sq) {
       break;
     }
+    auto st = sq->wait((size_t)this->current_priority(), [this]() { return !this->is_validate(); });
+    if (!st) {
+      continue;
+    }
+    // this is normal state
+    if (this->current_priority() == this->configed_priority()) {
+      if ((int)this->current_priority() < st->prio) {
+        // upgrade the thread priority
+        this->change_priority((thread_priority)st->prio);
+        this->adjust_prio_time_ = std::chrono::steady_clock::now();
+      } // else do nothing, we don't need to downgrade the thread priority
+        // to run the lower priority job
+    } else {
+      if (st->prio <= (size_t)this->configed_priority()) {
+        // Overclocking the thread priority for at least 30 seconds
+        auto kept_duration = std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::steady_clock::now() - this->adjust_prio_time_).count();
+        if (kept_duration > 30) {
+          this->change_priority(this->configed_priority());
+        }
+      }
+    }
+    st->i.begin_time = std::chrono::steady_clock::now();
+    // invoke the task
+    if (st->i.before) st->i.before(&st->i);
+    if (st->i.t) st->i.t();
+    st->i.end_time = std::chrono::steady_clock::now();
+    if (st->i.after) st->i.after(&st->i);
   }
 }
 
@@ -96,36 +96,14 @@ void worker::start() {
  * @brief Stop current worker, will wait until current running task to be stopped
 */
 void worker::stop() {
-  if (running_status_ != false) {
-    running_status_ = false;
+  if (this->is_validate()) {
+    this->invalidate_();
     if (auto sq = related_eq_.lock()) {
-      sq->break_waiter(this->running_tid_);
+      sq->break_waiter(this->id());
     }
   }
   // wait until get the running lock
   std::lock_guard<std::mutex> _(running_lock_);
-}
-
-/**
- * @brief inner thread main function
-*/
-void worker::entrance_point() {
-  while (running_status_) {
-    auto sq = related_eq_.lock();
-    if (!sq) {
-      running_status_ = false;
-      break;
-    }
-    auto st = sq->wait([this]() { return !this->running_status_; });
-    if (!st) {
-      continue;
-    }
-    st->i.btime = std::chrono::steady_clock::now();
-    // invoke the task
-    if (st->i.before) st->i.before(&st->i);
-    if (st->i.t) st->i.t();
-    if (st->i.after) st->i.after(&st->i);
-  }
 }
 
 } // namespace libtq

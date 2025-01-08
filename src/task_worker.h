@@ -39,7 +39,8 @@ SOFTWARE.
 #include <atomic>
 #include <memory>
 #include "task.h"
-#include "event_queue.h"
+#include "task_event_queue.h"
+#include "task_thread.h"
 
 namespace libtq {
 
@@ -47,18 +48,18 @@ typedef event_queue<task> eq_t;
 typedef std::weak_ptr<eq_t> eq_wt;
 typedef std::shared_ptr<eq_t> eq_st;
 
-class worker {
+class worker : public thread {
 public:
   /**
    * @brief Init a worker with the task queue.
    * @remarks throw runtime error when the queue is not validate
   */
-  worker(eq_wt q);
+  worker(eq_wt q, thread_attribute attr);
 
   /**
    * @brief Stop and quit worker
   */
-  ~worker();
+  virtual ~worker();
 
 public:
   worker(const worker&) = delete;
@@ -68,37 +69,17 @@ public:
 
 public:
   /**
-   * @brief return if current worker is running
-  */
-  bool is_running() const;
-
-  /**
-   * @brief Get current worker's thread id
-  */
-  std::thread::id id() const;
-
-  /**
-   * @brief Start current worker
-  */
-  void start();
-
-  /**
    * @brief Stop current worker, will wait until current running task to be stopped
   */
   void stop();
 
-private:
+protected:
   /**
    * @brief inner thread main function
   */
-  void entrance_point();
+  virtual void main();
 
 private:
-  /**
-   * @brief flags
-  */
-  std::atomic_bool running_status_;
-
   /**
    * @brief running status lock
   */
@@ -108,11 +89,10 @@ private:
    * @brief Releated event queue
   */
   eq_wt related_eq_;
-
   /**
-   * @brief Running thread's id
+   * @brief Last change priority time
   */
-  std::thread::id running_tid_;
+  task_time_t adjust_prio_time_;
 };
 
 } // namespace libtq

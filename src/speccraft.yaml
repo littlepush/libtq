@@ -1,0 +1,24 @@
+---
+name: libtq
+type: "[[ 'static' if @option('is_static') else 'dynamic' ]]"
+sources:
+- "[[@glob(@current, '.*.h')]]"
+- "[[@current('task_rwlock.cc')]]"
+- "[[@current('task_queue_manager.cc')]]"
+- "[[@current('task_queue.cc')]]"
+- "[[@current('task_timer.cc')]]"
+- "[[@current('task_worker_group.cc')]]"
+- "[[@current('task_worker.cc')]]"
+- "[[@on(@platform == 'win', @current('task_thread_win.cc'))]]"
+- "[[@off(@platform == 'win', @current('task_thread_posix.cc'))]]"
+options:
+  create_framework: true
+  enable_lto: "[[ @option('is_static') ]]"
+definitions:
+- TQ_IS_BUILDING=1
+includes:
+- expr: "[[ @current ]]"
+  inheritance: private
+dependences:
+- "[[@on(@platform == 'mac', '-framework AppKit')]]"
+- "[[@on(@platform == 'ios', '-framework UIKit')]]"

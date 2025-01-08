@@ -29,7 +29,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "rwlock.h"
+#include "task_rwlock.h"
 
 namespace libtq {
 
@@ -42,10 +42,10 @@ namespace libtq {
 void rwlock::lock() {
   std::unique_lock<std::mutex> _(mutex_);
   ++write_cnt_;
-  while (read_cnt_ != 0 || is_writing_) {
+  while (read_cnt_ != 0 || is_writing_ == 1u) {
     write_cond_.wait(_);
   }
-  is_writing_ = true;
+  is_writing_ = 1u;
 }
 /**
   * @brief Write unlock
@@ -53,7 +53,7 @@ void rwlock::lock() {
 void rwlock::unlock() {
   std::unique_lock< std::mutex > _(mutex_);
   if (write_cnt_ == 0) return;
-  is_writing_ = false;
+  is_writing_ = 0u;
   if ((--write_cnt_) == 0) {
     read_cond_.notify_all();
   } else {
@@ -85,11 +85,11 @@ void rwlock::unlock_shared() {
 */
 bool rwlock::try_lock() {
   std::unique_lock< std::mutex > _(mutex_);
-  if (read_cnt_ != 0 || is_writing_) {
+  if (read_cnt_ != 0 || is_writing_ == 1u) {
     return false;
   }
   ++write_cnt_;
-  is_writing_ = true;
+  is_writing_ = 1u;
   return true;
 }
 /**

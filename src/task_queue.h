@@ -35,10 +35,11 @@ SOFTWARE.
 #define LIBTQ_TASK_QUEUE_H__
 
 #include <list>
+#include <queue>
 #include <memory>
 
-#include "event_queue.h"
-#include "worker_group.h"
+#include "task_event_queue.h"
+#include "task_worker_group.h"
 #include "task.h"
 
 #ifdef _MSC_VER
@@ -58,12 +59,19 @@ typedef std::weak_ptr<worker_group>   wg_wt;
  * @brief Inner data storage of a task queue
 */
 struct task_queue_impl {
-  std::mutex        lock;
-  std::list<task>   tq;
-  std::atomic_bool  valid;
-  std::atomic_bool  running;
-  eq_wt             related_eq;
-  wg_wt             related_wg;
+  std::mutex                    lock;
+  std::list<task>               tq;
+  std::atomic_bool              valid;
+  std::atomic_bool              running;
+  eq_wt                         related_eq;
+  wg_wt                         related_wg;
+  thread_priority               priority;
+  unsigned int                  keep_recent_count;  // default = 100;
+  std::queue<task_trace_item>   recent_trace;
+
+  task_queue_impl() = default;
+  task_queue_impl(const task_queue_impl&) = delete;
+  task_queue_impl& operator = (const task_queue_impl&) = delete;
 };
 
 class task_queue : public std::enable_shared_from_this<task_queue> {
@@ -71,7 +79,10 @@ public:
   /**
    * @brief Force create task queue with shared ptr
   */
-  static std::shared_ptr<task_queue> create(eq_wt related_eq, wg_wt related_wg);
+  static std::shared_ptr<task_queue> create(
+    eq_wt related_eq, wg_wt related_wg, 
+    thread_priority priority = thread_priority::k_normal
+  );
   /**
    * @brief Block until all task done
   */
@@ -89,13 +100,24 @@ public:
 
   /**
    * @brief Post a async task
+   * @param direction: 0: post to the tail of queue, 1: post to the head of the queue
   */
-  void post_task(task_location loc, task_t t);
+  void post_task(task_location loc, task_t t, int direction = 0);
 
   /**
    * @brief Wait for current task to be done
   */
   void sync_task(task_location loc, task_t t);
+  
+  /**
+   * @brief Change the recent trace info keep count, default is 100
+  */
+  void set_recent_trace_keep_count(unsigned int count);
+  
+  /**
+   * @brief Get the recent trace info list(Copied)
+  */
+  std::queue<task_trace_item> recent_trace_info() const;
 
 public:
   task_queue(const task_queue&) = delete;
@@ -106,7 +128,7 @@ protected:
   /**
    * @brief Initialize a task queue bind to event queue and worker group
   */
-  task_queue(eq_wt related_eq, wg_wt related_wg);
+  task_queue(eq_wt related_eq, wg_wt related_wg, thread_priority priority);
   
 private:
   std::shared_ptr<task_queue_impl>  impl_;

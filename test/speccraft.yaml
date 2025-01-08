@@ -1,0 +1,11 @@
+---
+name: tqtest
+type: binary
+sources:
+  - "[[ @glob(@current, '.*.cc') ]]"
+dependences:
+  - libtq
+  - gtest_main
+includes:
+  - "[[ os.path.join(@root, 'src') ]]"
+  - "[[ os.path.join(@root, 'thirdparty', 'googletest', 'googletest', 'include') ]]"

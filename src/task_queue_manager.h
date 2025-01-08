@@ -49,14 +49,19 @@ public:
   static void adjust_default_worker_count(unsigned int wc);
 
   /**
+   * @brief Get the internal default worker group
+  */
+  static std::shared_ptr<worker_group> default_worker_group();
+
+  /**
    * @brief Create a task queue and bind to default worker group
   */
-  static tq_st create_task_queue();
+  static tq_st create_task_queue(thread_priority priority = thread_priority::k_normal);
 
   /**
    * @brief Create a task queue with specified event queue and worker group
   */
-  static tq_st create_task_queue(eq_st related_eq, wg_st related_wg);
+  static tq_st create_task_queue(eq_st related_eq, wg_st related_wg, thread_priority priority = thread_priority::k_normal);
 };
 
 } // namespace libtq

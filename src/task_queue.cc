@@ -35,6 +35,9 @@ namespace libtq {
 
 class state_semaphore {
 public:
+  state_semaphore() = default;
+  state_semaphore(const state_semaphore&) = delete;
+  state_semaphore& operator = (const state_semaphore&) = delete;
   void wait() {
     std::unique_lock<std::mutex> _(l_);
     cv_.wait(_, [this]() {
@@ -57,6 +60,18 @@ public:
   movable_flag() : p_ss_(new state_semaphore) {}
   movable_flag(const movable_flag& mf) : p_ss_(std::move(mf.p_ss_)) {}
   movable_flag(movable_flag&& mf) : p_ss_(std::move(mf.p_ss_)) {}
+  movable_flag& operator = (const movable_flag& mf) {
+    if (this != &mf) {
+      p_ss_ = std::move(mf.p_ss_);
+    }
+    return *this;
+  }
+  movable_flag& operator = (movable_flag&& mf) {
+    if (this != &mf) {
+      p_ss_ = std::move(mf.p_ss_);
+    }
+    return *this;
+  }
   ~movable_flag() {
     if (p_ss_) p_ss_->notify();
   }
@@ -70,20 +85,25 @@ protected:
 /**
  * @brief Force create task queue with shared ptr
 */
-std::shared_ptr<task_queue> task_queue::create(eq_wt related_eq, wg_wt related_wg) {
-  return std::shared_ptr<task_queue>(new task_queue(related_eq, related_wg));
+std::shared_ptr<task_queue> task_queue::create(
+  eq_wt related_eq, wg_wt related_wg, 
+  thread_priority priority
+) {
+  return std::shared_ptr<task_queue>(new task_queue(related_eq, related_wg, priority));
 }
 
 /**
  * @brief Initialize a task queue bind to event queue and worker group
 */
-task_queue::task_queue(eq_wt related_eq, wg_wt related_wg)
+task_queue::task_queue(eq_wt related_eq, wg_wt related_wg, thread_priority priority)
   : impl_(new task_queue_impl)
 { 
   impl_->running = false;
   impl_->valid = true;
   impl_->related_eq = related_eq;
   impl_->related_wg = related_wg;
+  impl_->priority = priority;
+  impl_->keep_recent_count = 100;
 }
 
 /**
@@ -117,12 +137,12 @@ void task_queue::break_queue() {
 /**
  * @brief Post a async task
 */
-void task_queue::post_task(task_location loc, task_t t) {
+void task_queue::post_task(task_location loc, task_t t, int direction) {
   if (!impl_->valid) return;
   task st;
   st.t = t;
   st.loc = loc;
-  st.ptime = std::chrono::steady_clock::now();
+  st.post_time = std::chrono::steady_clock::now();
 
   std::weak_ptr<task_queue_impl> w_tq_impl = this->impl_;
   st.after = [w_tq_impl](task* ptask) {
@@ -132,11 +152,23 @@ void task_queue::post_task(task_location loc, task_t t) {
       return;
     }
     std::lock_guard<std::mutex> _(impl->lock);
+    
+    // Save the trace info into the list
+    task_trace_item tracer;
+    tracer.loc = ptask->loc;
+    tracer.begin_time = ptask->begin_time;
+    tracer.end_time = ptask->end_time;
+    tracer.post_time = ptask->post_time;
+    impl->recent_trace.push(std::move(tracer));
+    if (impl->recent_trace.size() > impl->keep_recent_count) {
+      impl->recent_trace.pop();
+    }
+    
     impl->tq.pop_front();
     if (impl->tq.size() > 0) {
       if (auto seq = impl->related_eq.lock()) {
         // still running, no need to change
-        seq->emplace_back(std::move(impl->tq.front()));
+        seq->emplace_back(std::move(impl->tq.front()), (size_t)impl->priority);
       } else {
         impl->running = false;
       }
@@ -146,12 +178,16 @@ void task_queue::post_task(task_location loc, task_t t) {
   };
 
   std::lock_guard<std::mutex> _(impl_->lock);
-  impl_->tq.emplace_back(std::move(st));
+  if (direction == 0) {
+    impl_->tq.emplace_back(std::move(st));
+  } else {
+    impl_->tq.emplace_front(std::move(st));
+  }
   // the only one in the queue is current task
   if (impl_->tq.size() == 1 && impl_->running == false) {
     if (auto seq = impl_->related_eq.lock()) {
       impl_->running = true;
-      seq->emplace_back(std::move(impl_->tq.front()));
+      seq->emplace_back(std::move(impl_->tq.front()), (size_t)impl_->priority);
     }
   }
 }
@@ -174,6 +210,23 @@ void task_queue::sync_task(task_location loc, task_t t) {
       ss->wait();
     }
   }
+}
+
+/**
+ * @brief Change the recent trace info keep count, default is 100
+*/
+void task_queue::set_recent_trace_keep_count(unsigned int count) {
+  if (!impl_->valid) return;
+  std::lock_guard<std::mutex> _(impl_->lock);
+  impl_->keep_recent_count = count;
+}
+
+/**
+ * @brief Get the recent trace info list(Copied)
+*/
+std::queue<task_trace_item> task_queue::recent_trace_info() const {
+  std::lock_guard<std::mutex> _(impl_->lock);
+  return impl_->recent_trace;
 }
 
 } // namespace libtq

@@ -35,7 +35,7 @@ SOFTWARE.
 #define LIBTQ_WORKER_GROUP_H__
 
 #include <vector>
-#include "worker.h"
+#include "task_worker.h"
 
 namespace libtq {
 
@@ -46,7 +46,7 @@ public:
   /**
    * @brief Create a worker group with default 2 workers
   */
-  worker_group(eq_wt q, unsigned int worker_count = 2);
+  worker_group(eq_wt q, unsigned int worker_count = 2, thread_priority base_prio = thread_priority::k_normal);
 
   /**
    * @brief Destroy the group
@@ -59,6 +59,11 @@ public:
   size_t size() const;
 
   /**
+   * @brief Get the count of specifial priority
+  */
+  size_t size(thread_priority priority) const;
+
+  /**
    * @brief Check if current thread is in the worker group
   */
   bool in_worker_group() const;
@@ -69,9 +74,19 @@ public:
   void increase_worker();
 
   /**
+   * @brief increate a worker with specifial priority
+  */
+  void increase_worker(thread_priority priority);
+
+  /**
    * @brief remove a worker if still has
   */
   void decrease_worker();
+
+  /**
+   * @brief decrease a worker of specifial priority
+  */
+  void decrease_worker(thread_priority priority);
 
 public:
   worker_group(const worker_group&) = delete;
@@ -94,6 +109,11 @@ protected:
    * @brief Lock for workers
   */
   mutable std::mutex worker_lock_;
+
+  /**
+   * @brief Default priority when increase and decrease
+  */
+  thread_priority base_priority_;
 };
 
 } // namespace libtq

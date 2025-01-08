@@ -37,6 +37,11 @@ SOFTWARE.
 #include <functional>
 #include <chrono>
 
+#if defined(_WIN32)
+#pragma warning(disable: 4820)
+#pragma warning(disable: 5045)
+#endif
+
 namespace libtq {
 
 struct task;
@@ -47,33 +52,38 @@ typedef std::chrono::steady_clock                 task_clock_t;
 typedef std::chrono::time_point<task_clock_t>     task_time_t;
 typedef std::chrono::nanoseconds                  duration_t;
 
-struct task_location {
+struct alignas(intptr_t) task_location {
   const char*   file;
-  int           line;
+  intptr_t      line;   // use intptr_t to align the memory of pointer
 };
 
-#if (defined WIN32 | defined _WIN32 | defined WIN64 | defined _WIN64)
-inline struct task_location __build_location(const char* f, int l) {
-  struct task_location loc;
-  loc.file = f;
-  loc.line = l;
-  return loc;
-}
-#define __TQ_TASK_LOC     (libtq::__build_location(__FILE__, __LINE__))
-#else
-#define __TQ_TASK_LOC     (libtq::task_location){__FILE__, __LINE__}
-#endif
+// inline struct task_location __build_location(const char* f, int l) {
+//   return {f, l};
+// }
+// #define __TQ_TASK_LOC     (libtq::__build_location(__FILE__, __LINE__))
+#define __TQ_TASK_LOC     libtq::task_location{__FILE__, __LINE__}
 
 #define TQ_TASK_LOC       __TQ_TASK_LOC
 
-struct task {
+struct alignas(intptr_t) task_trace_item {
+  task_location   loc;
+  task_time_t     post_time;
+  task_time_t     begin_time;
+  task_time_t     end_time;
+};
+
+struct alignas(intptr_t) task : public task_trace_item {
   task_t        t;
   task_hook_t   before;
   task_hook_t   after;
-  task_location loc;
-  task_time_t   ptime;
-  task_time_t   btime;
 };
+
+#define LIBTQ_DISABLE_COPY(clz)   \
+  clz(const clz&) = delete;       \
+  clz& operator = (const clz&) = delete;
+#define LIBTQ_DISABLE_MOVE(clz)   \
+  clz(clz&&) = delete;            \
+  clz& operator = (clz&&) = delete;
 
 } // namespace libtq
 

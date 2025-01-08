@@ -54,15 +54,23 @@ public:
   void start(task_location loc, task_t job, unsigned int ms, bool fire_now = false);
 
   /**
-   * @brief Start a job after some time
-  */
-  void start_once_after(task_location loc, task_t job, unsigned int ms, 
-    std::function<bool()> pred = nullptr);
-
-  /**
    * @brief Stop the timer
   */
   void stop();
+
+  /**
+   * @brief Get the related queue
+  */
+  tq_wt related_queue() const;
+
+  /**
+   * @brief Start a job after some time to related task queue
+  */
+  static uint64_t once_after(tq_wt related_tq, task_location loc, task_t job, unsigned int delay_ms);
+  /**
+   * @brief Cancel an un-fired delay job
+  */
+  static void cancel_once(uint64_t job_id);
 
 protected:
   /**

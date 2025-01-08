@@ -40,6 +40,9 @@ public:
     tq_(libtq::task_queue::create(eq_, wg_))
   {}
 protected:
+  LIBTQ_DISABLE_COPY(task_queue_test)
+  LIBTQ_DISABLE_MOVE(task_queue_test)
+protected:
   libtq::eq_st eq_;
   libtq::wg_st wg_;
   libtq::tq_st tq_;
@@ -56,7 +59,7 @@ TEST_F(task_queue_test, test_post_tasks) {
     std::this_thread::yield();
   }
   EXPECT_EQ(result.size(), 10);
-  for (int i = 0; i < 10; ++i) {
+  for (size_t i = 0; i < 10; ++i) {
     EXPECT_EQ(result[i], i);
   }
 }
@@ -78,7 +81,7 @@ TEST_F(task_queue_test, test_sync_task) {
     result.push_back(5);
   });
   EXPECT_EQ(result.size(), 6);
-  for (int i = 0; i < 6; ++i) {
+  for (size_t i = 0; i < 6; ++i) {
     EXPECT_EQ(result[i], i);
   }
 }

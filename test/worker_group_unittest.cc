@@ -29,12 +29,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "worker_group.h"
+#include "task_worker_group.h"
 #include "gtest/gtest.h"
 
 class worker_group_test : public testing::Test {
 public:
   worker_group_test() : eq_(new libtq::eq_t), wg_(eq_) {}
+protected:
+  LIBTQ_DISABLE_COPY(worker_group_test)
+  LIBTQ_DISABLE_MOVE(worker_group_test)
 protected:
   libtq::eq_st eq_;
   libtq::worker_group wg_;
@@ -59,7 +62,7 @@ TEST_F(worker_group_test, validate_count) {
       }
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     };
-    st.after = [&iq](libtq::task *ptask) {
+    st.after = [&iq](libtq::task *) {
       iq.emplace_back(1);
     };
     eq_->emplace_back(std::move(st));

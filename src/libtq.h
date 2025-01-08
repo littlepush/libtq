@@ -35,8 +35,8 @@ SOFTWARE.
 #define LIBTQ_H__
 
 #include "task_queue.h"
-#include "threadsafe.h"
-#include "timer.h"
+#include "task_threadsafe.h"
+#include "task_timer.h"
 
 #endif
 

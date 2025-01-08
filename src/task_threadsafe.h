@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <memory>
 #include <thread>
-#include "rwlock.h"
+#include "task_rwlock.h"
 #include "task_queue.h"
 
 namespace libtq {

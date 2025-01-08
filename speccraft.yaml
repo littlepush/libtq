@@ -1,0 +1,31 @@
+---
+spec_version: '1.0'
+name: libtq
+type: project
+version: 2.0.1
+cxx_standard: 14
+c_standard: 11
+verbose: false
+generators:
+  - name: cmake
+    cmake_min_version: 3.10.0
+    use_folders: true
+    policy:
+    - CMP0042, NEW
+    - CMP0079, NEW, ${CMAKE_VERSION} VERSION_GREATER "3.13.0"
+  - name: bazel
+    # .. other bazel configurations
+specs:
+- "[[ os.path.join(@root, 'specs') ]]"
+extends:
+- "[[ os.path.join(@root, 'extends') ]]"
+modules:
+- "[[ @root('modules') ]]"
+subtargets:
+- "[[ os.path.join(@root, 'thirdparty') ]]"
+- "[[ os.path.join(@root, 'src') ]]"
+- "[[ @on(@option('enable_test'), os.path.join(@root, 'test')) ]]"
+linkOptions:
+- "[[ @on(@platform == 'linux', '-pthread') ]]"
+options:
+  test_string: default_2

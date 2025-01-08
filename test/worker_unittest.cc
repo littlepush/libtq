@@ -29,12 +29,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include "worker.h"
+#include "task_worker.h"
 #include "gtest/gtest.h"
 
 class worker_test : public testing::Test {
 public:
-  worker_test() : eq_(new libtq::eq_t), w_(eq_) {}
+  worker_test() : eq_(new libtq::eq_t), w_(eq_, libtq::default_thread_attribute()) {}
+
+protected:
+  LIBTQ_DISABLE_COPY(worker_test)
+  LIBTQ_DISABLE_MOVE(worker_test)
 protected:
   libtq::eq_st eq_;
   libtq::worker w_;
@@ -42,9 +46,9 @@ protected:
 
 TEST_F(worker_test, start_stop) {
   w_.start();
-  EXPECT_TRUE(w_.is_running());
+  EXPECT_TRUE(w_.is_validate());
   w_.stop();
-  EXPECT_FALSE(w_.is_running());
+  EXPECT_FALSE(w_.is_validate());
 }
 
 TEST_F(worker_test, async_thread) {
@@ -52,17 +56,17 @@ TEST_F(worker_test, async_thread) {
   libtq::task st;
   auto c_tid = std::this_thread::get_id();
   int count = 0;
-  st.before = [&count](libtq::task* ptask) {
+  st.before = [&count](libtq::task*) {
     count += 1;
   };
   st.t = [c_tid, &count]() {
     EXPECT_NE(c_tid, std::this_thread::get_id());
     count += 1;
   };
-  st.after = [&count](libtq::task* ptask) {
+  st.after = [&count](libtq::task*) {
     count += 1;
   };
-  eq_->emplace_back(std::move(st));
+  eq_->emplace_back(std::move(st), 2);
   while (eq_->pending_count() > 0) {
     std::this_thread::yield();
   }

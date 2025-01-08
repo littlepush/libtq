@@ -43,6 +43,11 @@ SOFTWARE.
 #include <atomic>
 #endif
 
+#if defined(_WIN32)
+#pragma warning(disable: 4820)
+#pragma warning(disable: 5045)
+#endif
+
 namespace libtq {
 #if ((defined(_MSVC_LANG) && _MSVC_LANG >= 201703L) || __cplusplus >= 201703L)
 typedef std::shared_mutex rwlock;
@@ -93,7 +98,7 @@ protected:
   std::condition_variable write_cond_;
   std::atomic<unsigned int> read_cnt_{0};
   std::atomic<unsigned int> write_cnt_{0};
-  std::atomic<bool> is_writing_{false};
+  std::atomic<unsigned int> is_writing_{0};
 };
 
 #endif

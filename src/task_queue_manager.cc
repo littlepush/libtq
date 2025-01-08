@@ -30,7 +30,7 @@ SOFTWARE.
 */
 
 #include "task_queue_manager.h"
-#include "worker_group.h"
+#include "task_worker_group.h"
 
 namespace libtq {
 
@@ -56,19 +56,25 @@ void task_queue_manager::adjust_default_worker_count(unsigned int wc) {
     wg->increase_worker();
   }
 }
+/**
+ * @brief Get the internal default worker group
+*/
+std::shared_ptr<worker_group> task_queue_manager::default_worker_group() {
+  return global_worker_group();
+}
 
 /**
  * @brief Create a task queue and bind to default worker group
 */
-task_queue_manager::tq_st task_queue_manager::create_task_queue() {
-  return task_queue::create(global_event_queue(), global_worker_group());
+task_queue_manager::tq_st task_queue_manager::create_task_queue(thread_priority priority) {
+  return task_queue::create(global_event_queue(), global_worker_group(), priority);
 }
 
 /**
  * @brief Create a task queue with specified event queue and worker group
 */
-task_queue_manager::tq_st task_queue_manager::create_task_queue(eq_st related_eq, wg_st related_wg) {
-  return task_queue::create(related_eq, related_wg);
+task_queue_manager::tq_st task_queue_manager::create_task_queue(eq_st related_eq, wg_st related_wg, thread_priority priority) {
+  return task_queue::create(related_eq, related_wg, priority);
 }
 
 } // namespace libtq
