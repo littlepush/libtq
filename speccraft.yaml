@@ -27,5 +27,3 @@ subtargets:
 - "[[ @on(@option('enable_test'), os.path.join(@root, 'test')) ]]"
 linkOptions:
 - "[[ @on(@platform == 'linux', '-pthread') ]]"
-options:
-  test_string: default_2
