@@ -1,0 +1,16 @@
+---
+name: ios_toolchains
+type: bool
+match: "[[ @platform == 'ios' ]]"
+default: true
+actions:
+  'true':
+    toolchains:
+      compileOptions:
+      - "[[ @on(@lang == 'cxx', '-fno-c++-static-destructors') ]]"
+      - "[[ @on(@lang == 'cxx', '-Wextra') ]]"
+      - "[[ @on(@lang == 'cxx', '-Wno-unused-parameter') ]]"
+      linkOptions:
+      - "-Wl,-search_paths_first"
+      - "-OjbC"
+      - "-dead_strip"

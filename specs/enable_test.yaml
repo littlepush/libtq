@@ -1,0 +1,4 @@
+---
+name: enable_test
+type: bool
+default: true

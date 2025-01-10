@@ -1,0 +1,10 @@
+---
+name: windows_export_all_symbols
+type: bool
+default: true
+match: "[[ @platform == 'win' ]]"
+actions:
+  'true':
+    toolchains:
+      settings:
+        CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS: 'ON'

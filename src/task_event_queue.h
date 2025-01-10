@@ -93,9 +93,9 @@ public:
 
 public:
 
-  void register_worker(size_t priority = normal_priority, int p_in) {
+  // void register_worker(size_t priority = normal_priority, int p_in) {
     
-  }
+  // }
 
   /**
    * @brief Block and wait for item, unless break the queue

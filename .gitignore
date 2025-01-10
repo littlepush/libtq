@@ -48,3 +48,4 @@ src/peco.h
 # Visual Studio
 .vs
 .venv
+spec_gen

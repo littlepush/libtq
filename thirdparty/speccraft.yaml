@@ -1,0 +1,9 @@
+---
+name: thirdparty
+type: group
+settings:
+  BUILD_GMOCK: "OFF"
+  INSTALL_GTEST: "OFF"
+  gtest_force_shared_crt: "ON CACHE BOOL \"Force to use MD\" FORCE"
+afterGeneration:
+- "[[ @on(@option('enable_test'), 'add_subdirectory(\"{}\" googletest)'.format(@fpath(os.path.join(@root, 'thirdparty/googletest')))) ]]"

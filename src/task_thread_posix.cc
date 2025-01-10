@@ -37,6 +37,8 @@ SOFTWARE.
 #include <sys/prctl.h>
 #endif
 
+#include <algorithm>
+
 namespace libtq {
 
 #if defined(__APPLE__)
