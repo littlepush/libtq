@@ -1,25 +1,28 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.10)
+
+if(CMAKE_VERSION VERSION_GREATER "3.13.0")
+    cmake_policy(SET CMP0079 NEW)
+endif()
+cmake_policy(SET CMP0042 NEW)
 
 project(tq
     VERSION 2.0.1
     DESCRIPTION "Multiple Thread Module based on task queue"
-    LANGUAGES CXX
+    LANGUAGES C CXX
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TQ_BUILD_TESTS "Build tests" ON)
 option(TQ_BUILD_EXAMPLES "Build examples" OFF)
-option(TQ_BUILD_SHARED "Build shared library" ON)
+option(TQ_BUILD_SHARED "Build shared library" OFF)
 
-if(NOT CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    add_compile_options(-Werror)
-    add_compile_options(-Wall -Wextra -Wpedantic)
-else()
-    add_compile_options(/WX)
-    add_compile_options(/W4)
+if(WIN32 AND TQ_BUILD_SHARED)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 set(TQ_SOURCES
@@ -54,9 +57,22 @@ endif()
 
 if(TQ_BUILD_SHARED)
     add_library(tq SHARED ${TQ_SOURCES} ${TQ_HEADERS})
+    target_compile_definitions(tq PRIVATE
+        LIBTQ_LIB_STATIC=0
+        LIBTQ_LIB_SHARED=1
+    )
 else()
     add_library(tq STATIC ${TQ_SOURCES} ${TQ_HEADERS})
+    target_compile_definitions(tq PRIVATE
+        LIBTQ_LIB_STATIC=1
+        LIBTQ_LIB_SHARED=0
+    )
+    if(NOT WIN32)
+        target_link_options(tq PRIVATE -static)
+    endif()
 endif()
+
+target_compile_definitions(tq PRIVATE TQ_IS_BUILDING=1)
 
 target_include_directories(tq
     PUBLIC
@@ -64,8 +80,22 @@ target_include_directories(tq
         $<INSTALL_INTERFACE:include>
 )
 
-if(NOT WIN32)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_libraries(tq PUBLIC pthread)
+elseif(APPLE)
+    if(NOT IOS)
+        find_library(APPKIT_FRAMEWORK AppKit)
+        target_link_libraries(tq PUBLIC ${APPKIT_FRAMEWORK})
+    endif()
+elseif(IOS)
+    find_library(UIKIT_FRAMEWORK UIKit)
+    target_link_libraries(tq PUBLIC ${UIKIT_FRAMEWORK})
+    target_compile_options(tq PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:-fno-c++-static-destructors>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wextra>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-parameter>
+    )
+    target_link_options(tq PRIVATE -Wl,-search_paths_first -ObjC -dead_strip)
 endif()
 
 set_target_properties(tq PROPERTIES
