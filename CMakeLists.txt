@@ -19,7 +19,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TQ_BUILD_TESTS "Build tests" ON)
 option(TQ_BUILD_EXAMPLES "Build examples" OFF)
-option(TQ_BUILD_SHARED "Build shared library" OFF)
+option(TQ_BUILD_SHARED "Build shared library" ON)
 
 if(WIN32 AND TQ_BUILD_SHARED)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
